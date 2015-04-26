@@ -3,7 +3,9 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.6.0"]]
+  :dependencies [[org.clojure/clojure "1.6.0"]
+                 [clj-http "1.1.1"]
+                 [org.clojure/core.typed "0.2.84"]]
   :main ^:skip-aot nekorock.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
