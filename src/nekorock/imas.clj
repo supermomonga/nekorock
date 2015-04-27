@@ -25,13 +25,18 @@
                                      (#(str "https://connect.mobage.jp" %)))
                                  :csrf_token
                                  (-> (e/select it [:meta#mobage-connect-app-csrf-token]) first :attrs :content)
-                                 :client_id (-> (e/select it [[(e/attr= :name "client_id")]]) first :attrs :value)
-                                 :theme (-> (e/select it [[(e/attr= :name "theme")]]) first :attrs :value)
-                                 :display (-> (e/select it [[(e/attr= :name "display")]]) first :attrs :value)
-                                 :width (-> (e/select it [[(e/attr= :name "width")]]) first :attrs :value)
-                                 :height (-> (e/select it [[(e/attr= :name "height")]]) first :attrs :value)
-                                 :enable_federation (-> (e/select it [[(e/attr= :name "enable_federation")]]) first :attrs :value)
-                                 ))
+                                 :client_id
+                                 (-> (e/select it [[(e/attr= :name "client_id")]]) first :attrs :value)
+                                 :theme
+                                 (-> (e/select it [[(e/attr= :name "theme")]]) first :attrs :value)
+                                 :display
+                                 (-> (e/select it [[(e/attr= :name "display")]]) first :attrs :value)
+                                 :width
+                                 (-> (e/select it [[(e/attr= :name "width")]]) first :attrs :value)
+                                 :height
+                                 (-> (e/select it [[(e/attr= :name "height")]]) first :attrs :value)
+                                 :enable_federation
+                                 (-> (e/select it [[(e/attr= :name "enable_federation")]]) first :attrs :value)))
                    (into {:subject_id username
                           :subject_password password})
                    (as-> it
