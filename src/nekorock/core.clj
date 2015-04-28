@@ -1,7 +1,8 @@
 (ns nekorock.core
   (:require [clojure.core.typed :as t]
             [clj-http.client :as c]
-            [nekorock.imas :as imas])
+            [nekorock.imas :as imas]
+            [environ.core :refer [env] :as e])
   (:gen-class))
 
 
@@ -10,8 +11,7 @@
   [& args]
   (let [cs (clj-http.cookies/cookie-store)]
     (println
-     (imas/login cs (System/getenv "MOBAGE_USERNAME") (System/getenv "MOBAGE_PASSWORD"))))
-  (println "Hello, World!")
+     (imas/login cs (env :mobage-username) (env :mobage-password) (env :2captcha-api-key))))
   (println "oh,"))
 
 

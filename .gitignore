@@ -12,3 +12,5 @@ pom.xml.asc
 
 
 .env
+.lein-env
+profiles.clj
