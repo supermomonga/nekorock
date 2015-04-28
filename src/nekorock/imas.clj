@@ -6,8 +6,36 @@
 
 (def h {"User-Agent" "Mozilla/5.0 (Linux; U; Android 4.0.1; ja-jp; Galaxy Nexus Build/ITL41D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"})
 
-(t/ann login [BasicCookieStore, String, String -> String])
-(defn login [cs username password]
+(defn get-remote-image-bytes [cs url]
+  ((c/get url {:headers h :cookie-store cs :as :byte-array}) :body))
+
+(defn save-captcha [bytes]
+  (with-open [w (clojure.java.io/output-stream "captcha.jpg")]
+    (.write w bytes)))
+
+(defn send-captcha [apikey bytes]
+  (let [[status captcha-id]
+        (-> (c/post "http://2captcha.com/in.php"
+                    {:multipart [{:name "Content/type" :content "image/jpeg"}
+                                 {:name "file"         :content bytes }
+                                 {:name "numeric"      :content "1"}
+                                 {:name "min_len"      :content "4"}
+                                 {:name "max_len"      :content "4"}
+                                 {:name "key"          :content apikey}]})
+            (:body)
+            (clojure.string/split #"\|"))]
+    (if (= status "OK") captcha-id nil)))
+
+(defn get-captcha [apikey captcha-id]
+  )
+
+(defn solve-captcha [apikey bytes]
+  (let [captcha-id (send-captcha apikey bytes)]
+    (println captcha-id)
+    (get-captcha apikey captcha-id)))
+
+(t/ann login [BasicCookieStore, String, String, String -> String])
+(defn login [cs username password captcha-apikey]
   "Login to mobage"
   (println username)
   (let [params (-> (c/get "https://connect.mobage.jp/login" {:headers h :cookie-store cs})
@@ -42,17 +70,21 @@
                    (as-> it
                        (into {} (for [[k v] it]
                                   [(name k) v]))))]
-    (println params)
-    (println "CAPTCHA url is:" (params "captcha_url"))
-    (c/post "https://connect.mobage.jp/login" {:headers h
-                                               :cookie-store cs
-                                               :client-params params})
+    ;; (println params)
+    ;; (println "CAPTCHA url is:" (params "captcha_url"))
+    ;; (println "")
+    (save-captcha (get-remote-image-bytes cs (params "captcha_url")))
+    (solve-captcha captcha-apikey (get-remote-image-bytes cs (params "captcha_url")))
+    ;; (c/post "https://connect.mobage.jp/login" {:headers h
+    ;;                                            :cookie-store cs
+    ;;                                            :client-params params})
     )
   "hi")
 
 (defn logout [cs username password]
   "Logout from mobage"
   (-> (c/get "http://sp.mbga.jp/_logout_confirm" {:headers h :cookie-store cs})))
+
 
 ;; https://connect.mobage.jp/login?post_login_redirect_uri=https%3A%2F%2Fconnect.mobage.jp%2Fconnect%2F1.0%2Fservices%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3Dportal-4%26scope%3Dopenid%26redirect_uri%3Dhttps%253A%252F%252Fssl.sp.mbga.jp%252F_connect_login_callback%26state%3D1397494.UcH63tDI990jxtrjNKUxKIwf.1430163291%26display%3Dtouch%26prompt%3Dconsent&sig=3ea53947c5c02b8b18ee6e084c0d5e13af51df73&iat=1430163291&seed=1s6qHybMAyw&display=touch
 ;; https://connect.mobage.jp/login?post_login_redirect_uri=https://connect.mobage.jp/connect/1.0/services/authorize?response_type=code&client_id=portal-4&scope=openid&redirect_uri=https%3A%2F%2Fssl.sp.mbga.jp%2F_connect_login_callback&state=1397494.UcH63tDI990jxtrjNKUxKIwf.1430163291&display=touch&prompt=consent&sig=3ea53947c5c02b8b18ee6e084c0d5e13af51df73&iat=1430163291&seed=1s6qHybMAyw&display=touch
