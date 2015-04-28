@@ -73,7 +73,7 @@
     ;; (println params)
     ;; (println "CAPTCHA url is:" (params "captcha_url"))
     ;; (println "")
-    (save-captcha (get-remote-image-bytes cs (params "captcha_url")))
+    ;; (save-captcha (get-remote-image-bytes cs (params "captcha_url")))
     (solve-captcha captcha-apikey (get-remote-image-bytes cs (params "captcha_url")))
     ;; (c/post "https://connect.mobage.jp/login" {:headers h
     ;;                                            :cookie-store cs
