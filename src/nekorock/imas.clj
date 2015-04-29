@@ -6,6 +6,8 @@
 
 (def h {"User-Agent" "Mozilla/5.0 (Linux; U; Android 4.0.1; ja-jp; Galaxy Nexus Build/ITL41D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"})
 
+(def imas-url [])
+
 (defn get-remote-image-bytes [cs url]
   ((c/get url {:headers h :cookie-store cs :as :byte-array}) :body))
 
@@ -24,62 +26,78 @@
                                  {:name "key"          :content apikey}]})
             (:body)
             (clojure.string/split #"\|"))]
-    (if (= status "OK") captcha-id nil)))
+    (if (= status "OK")
+      captcha-id
+      (println status))))
 
 (defn get-captcha [apikey captcha-id]
-  )
+  (let [[status captcha]
+        (-> (c/post "http://2captcha.com/res.php"
+                    {:query-params {"key" apikey
+                                    "action" "get"
+                                    "id" captcha-id}})
+            (:body)
+            (clojure.string/split #"\|"))]
+    (condp = status
+      "OK" captcha
+      "CAPCHA_NOT_READY" (do
+                           (Thread/sleep 2000)
+                           (get-captcha apikey captcha-id))
+      (println status))))
 
 (defn solve-captcha [apikey bytes]
   (let [captcha-id (send-captcha apikey bytes)]
-    (println captcha-id)
     (get-captcha apikey captcha-id)))
 
 (t/ann login [BasicCookieStore, String, String, String -> String])
 (defn login [cs username password captcha-apikey]
   "Login to mobage"
   (println username)
-  (let [params (-> (c/get "https://connect.mobage.jp/login" {:headers h :cookie-store cs})
+  (let [params (-> (c/get "http://sp.mbga.jp/_lg" {:headers h :cookie-store cs})
                    :body
                    (e/html-snippet)
                    (as-> it
-                       (hash-map :login_history_id
+                       (hash-map "login_history_id"
                                  (-> (e/select it [[(e/attr= :name "login_history_id")]]) first :attrs :value)
-                                 :post_login_redirect_uri
+                                 "post_login_redirect_uri"
                                  (-> (e/select it [[(e/attr= :name "post_login_redirect_uri")]]) first :attrs :value)
-                                 :captcha_state
+                                 "captcha_state"
                                  (-> (e/select it [[(e/attr= :name "captcha_state")]]) first :attrs :value)
-                                 :captcha_url
+                                 "captcha_url"
                                  (-> (e/select it [[:img (e/attr-starts :src "/captcha/image?captcha_state=")]]) first :attrs :src
                                      (#(str "https://connect.mobage.jp" %)))
-                                 :csrf_token
+                                 "csrf_token"
                                  (-> (e/select it [:meta#mobage-connect-app-csrf-token]) first :attrs :content)
-                                 :client_id
-                                 (-> (e/select it [[(e/attr= :name "client_id")]]) first :attrs :value)
-                                 :theme
-                                 (-> (e/select it [[(e/attr= :name "theme")]]) first :attrs :value)
-                                 :display
-                                 (-> (e/select it [[(e/attr= :name "display")]]) first :attrs :value)
-                                 :width
-                                 (-> (e/select it [[(e/attr= :name "width")]]) first :attrs :value)
-                                 :height
-                                 (-> (e/select it [[(e/attr= :name "height")]]) first :attrs :value)
-                                 :enable_federation
-                                 (-> (e/select it [[(e/attr= :name "enable_federation")]]) first :attrs :value)))
-                   (into {:subject_id username
-                          :subject_password password})
-                   (as-> it
-                       (into {} (for [[k v] it]
-                                  [(name k) v]))))]
+                                 "client_id"
+                                 (-> (e/select it [[(e/attr= :name "client_id")]]) first :attrs :value)))
+                   (into {"login" "login"
+                          "width" "auto"
+                          "height" "auto"
+                          "enable_federation" 1
+                          "display" "touch"
+                          "theme" "default"
+                          "subject_id" username
+                          "subject_password" password}))]
     ;; (println params)
     ;; (println "CAPTCHA url is:" (params "captcha_url"))
     ;; (println "")
     ;; (save-captcha (get-remote-image-bytes cs (params "captcha_url")))
-    (solve-captcha captcha-apikey (get-remote-image-bytes cs (params "captcha_url")))
-    ;; (c/post "https://connect.mobage.jp/login" {:headers h
-    ;;                                            :cookie-store cs
-    ;;                                            :client-params params})
-    )
-  "hi")
+    (let [captcha (solve-captcha captcha-apikey (get-remote-image-bytes cs (params "captcha_url")))]
+      ;; (println (into params {"captcha" captcha}))
+      (-> (c/post "https://connect.mobage.jp/login" {:headers h
+                                                     :cookie-store cs
+                                                     :form-params (into params {"captcha" captcha})})
+          (:body)
+          (println))))
+  (-> (c/get "http://sp.pf.mbga.jp/12008305/?guid=ON&url=http%3A%2F%2F125.6.169.35%2Fidolmaster%2Fresults%2Findex%3Fl_frm%3DMypage_1%26rnd%3D956286586"
+             {:headers h
+              :cookie-store cs})
+      (:body)
+      (e/html-snippet)
+      (-> (e/select [[:a (e/attr-starts :href "http://mbga.jp/.maf0f/_u?u=" )]]) first :attrs :href
+          (as-> it
+              (re-find #"u=(\d+)" it)))
+      (last)))
 
 (defn logout [cs username password]
   "Logout from mobage"

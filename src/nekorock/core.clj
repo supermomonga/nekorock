@@ -7,11 +7,16 @@
 
 
 (defn -main
-  "I don't do a whole lot ... yet."
+  "crawling trade log"
   [& args]
   (let [cs (clj-http.cookies/cookie-store)]
-    (println
-     (imas/login cs (env :mobage-username) (env :mobage-password) (env :2captcha-api-key))))
-  (println "oh,"))
+    (if-let [mobage-id
+               (imas/login
+                cs
+                (env :mobage-username)
+                (env :mobage-password)
+                (env :2captcha-api-key))]
+      (println "Logined. mobage id:" mobage-id)
+      (println "Login failed."))))
 
 
