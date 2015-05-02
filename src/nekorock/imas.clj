@@ -6,26 +6,26 @@
 
 (def h {"User-Agent" "Mozilla/5.0 (Linux; U; Android 4.0.1; ja-jp; Galaxy Nexus Build/ITL41D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"})
 
-(defn http-get
+(defn- http-get
   "Like #'request, but sets the :method and :url as appropriate."
   [url cs & [req]]
   (c/get url (into {:headers h :cookie-store cs} req)))
 
-(defn http-post
+(defn- http-post
   "Like #'request, but sets the :method and :url as appropriate."
   [url cs & [req]]
   (c/post url (into {:headers h :cookie-store cs} req)))
 
 (def imas-url [])
 
-(defn get-remote-image-bytes [cs url]
+(defn- get-remote-image-bytes [cs url]
   ((http-get url cs {:as :byte-array}) :body))
 
-(defn save-captcha [bytes]
+(defn- save-captcha [bytes]
   (with-open [w (clojure.java.io/output-stream "captcha.jpg")]
     (.write w bytes)))
 
-(defn send-captcha [apikey bytes]
+(defn- send-captcha [apikey bytes]
   (let [[status captcha-id]
         (-> (c/post "http://2captcha.com/in.php"
                     {:multipart [{:name "Content/type" :content "image/jpeg"}
@@ -40,7 +40,7 @@
       captcha-id
       (println status))))
 
-(defn get-captcha [apikey captcha-id]
+(defn- get-captcha [apikey captcha-id]
   (let [[status captcha]
         (-> (c/post "http://2captcha.com/res.php"
                     {:query-params {"key" apikey
@@ -55,7 +55,7 @@
                            (get-captcha apikey captcha-id))
       (println status))))
 
-(defn solve-captcha [apikey bytes]
+(defn- solve-captcha [apikey bytes]
   (let [captcha-id (send-captcha apikey bytes)]
     (get-captcha apikey captcha-id)))
 
