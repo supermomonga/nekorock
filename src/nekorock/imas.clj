@@ -4,6 +4,14 @@
             [net.cgrand.enlive-html :as e])
   (:gen-class))
 
+(defn generate-imas-url
+  "Create mobage proxied url"
+  ([path] (generate-imas-url path {}))
+  ([path params]
+   (let [base-url "http://125.6.169.35/idolmaster/"
+         proxy-url "http://sp.pf.mbga.jp/12008305/?url="
+         query-string (c/generate-query-string params)]
+     (str base-url path query-string))))
 (def h {"User-Agent" "Mozilla/5.0 (Linux; U; Android 4.0.1; ja-jp; Galaxy Nexus Build/ITL41D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"})
 
 (defn- http-get
@@ -15,8 +23,6 @@
   "Like #'request, but sets the :method and :url as appropriate."
   [url cs & [req]]
   (c/post url (into {:headers h :cookie-store cs} req)))
-
-(def imas-url [])
 
 (defn- get-remote-image-bytes [cs url]
   ((http-get url cs {:as :byte-array}) :body))
