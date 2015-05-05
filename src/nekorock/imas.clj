@@ -4,14 +4,27 @@
             [net.cgrand.enlive-html :as e])
   (:gen-class))
 
+(def imas-base-url "http://125.6.169.35/idolmaster/")
+(def proxy-base-url "http://sp.pf.mbga.jp/12008305/?url=")
+
 (defn generate-imas-url
   "Create mobage proxied url"
-  ([path] (generate-imas-url path {}))
+  ([path]
+   (str imas-base-url path))
   ([path params]
-   (let [base-url "http://125.6.169.35/idolmaster/"
-         proxy-url "http://sp.pf.mbga.jp/12008305/?url="
-         query-string (c/generate-query-string params)]
-     (str base-url path query-string))))
+   (str imas-base-url path "?" (c/generate-query-string params))))
+
+(defn generate-proxied-url
+  "Create mobage proxied url"
+  [url]
+  (str proxy-base-url (clj-http.util/url-encode url)))
+
+(defn url
+  ([path]
+   (generate-proxied-url (generate-imas-url path)))
+  ([path params]
+   (generate-proxied-url (generate-imas-url path params))))
+
 (def h {"User-Agent" "Mozilla/5.0 (Linux; U; Android 4.0.1; ja-jp; Galaxy Nexus Build/ITL41D) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"})
 
 (defn- http-get
